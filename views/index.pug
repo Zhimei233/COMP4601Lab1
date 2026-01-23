@@ -23,7 +23,7 @@ html
       .split{height:10px}
 
   body
-    h1 Lab1 Client (Single Page)
+    h1 Lab1 Client Page
 
     .row
       .box
@@ -42,7 +42,7 @@ html
           | Include out-of-stock
 
         button(onclick="search()") Search
-        p.hint Results (JSON) show below. Use an ID to open HTML pages on the right.
+        p.hint Results (JSON) show below. Use an ID to open HTML pages.
         pre#out
 
       .box
@@ -122,12 +122,12 @@ html
 
       function openProduct() {
         const id = document.getElementById('pid').value.trim();
-        window.open(`/products/${id}`, '_blank');
+        window.location.href = `/products/${id}`;
       }
 
       function openReviews() {
         const id = document.getElementById('pid').value.trim();
-        window.open(`/products/${id}/reviews`, '_blank');
+        window.location.href = `/products/${id}/reviews`;
       }
 
       async function addReview() {

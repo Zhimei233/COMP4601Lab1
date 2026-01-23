@@ -198,8 +198,7 @@ function verifyReview(req, res, next) {
 
 function addReview(req, res, next) {
   const review = {
-    rating: Number(req.body.rating),
-    createdAt: new Date().toISOString()
+    rating: Number(req.body.rating)
   };
 
   req.product.reviews.push(review);
