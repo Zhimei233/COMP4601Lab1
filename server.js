@@ -62,8 +62,6 @@ function searchProducts(query) {
 // Routes
 app.get("/", (req, res) => res.status(200).render("index"));
 
-app.get("/about", (req, res) => res.status(200).render("about"));
-
 // List of products
 app.get("/products", (req, res) => {
   const results = searchProducts(req.query);

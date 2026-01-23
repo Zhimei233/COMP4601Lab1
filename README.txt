@@ -35,7 +35,6 @@ Data is stored in memory.
   - products_list.pug – Displays a list of products  
   - product.pug – Displays a single product and its details  
   - reviews.pug – Displays reviews for a specific product  
-  - about.pug – About page
 - package.json / package-lock.json  
   Project configuration and dependency definitions.
 
