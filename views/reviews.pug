@@ -19,5 +19,44 @@ block content
       each r in reviews
         li #{r.rating} / 10
 
+  .panel
+    .section-title Add a review (rating 1–10)
+    p.small Sends JSON: { "rating": 1..10 }
+
+    label(for="ratingInput") Rating
+    input#ratingInput(type="text" placeholder="e.g., 8")
+
+    button(type="button" onclick="addReview()") Add Review
+    pre#msg
+
   p
     a(href=`/products/${productId}`) Back to Product
+
+  script.
+    async function addReview(){
+      const ratingStr = document.getElementById('ratingInput').value.trim();
+      const rating = Number(ratingStr);
+      const msg = document.getElementById('msg');
+      msg.textContent = '';
+
+      const res = await fetch(`/products/${#{productId}}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ rating })
+      });
+
+      let text;
+      try {
+        const data = await res.json();
+        text = JSON.stringify(data, null, 2);
+      } catch (e) {
+        text = await res.text();
+      }
+
+      msg.textContent = `Status: ${res.status}\n` + text;
+
+      if (res.ok) {
+        // refresh to show the new rating in the list + updated average
+        window.location.reload();
+      }
+    }

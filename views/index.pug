@@ -12,10 +12,6 @@ block content
       input#s_inStock(type="checkbox")
       |  In stock only
 
-    label
-      input#s_all(type="checkbox")
-      |  Include out-of-stock
-
     button(type="button" onclick="search()") Search
     pre#out
 
@@ -77,8 +73,11 @@ block content
     async function search(){
       const name = encodeURIComponent(document.getElementById('s_name').value.trim());
       const inStock = chkIn.checked ? 'true' : 'false';
-      const all = chkAll.checked ? 'true' : 'false';
-      const url = `/products?name=${name}&inStock=${inStock}&all=${all}`;
+      // default = all product
+      const url = inStock
+        ? `/products?name=${name}&inStock=true`
+        : `/products?name=${name}&all=true`;
+
       const res = await fetch(url, { headers: { "Accept": "application/json" } });
       const data = await res.json();
       document.getElementById('out').textContent = JSON.stringify(data, null, 2);
