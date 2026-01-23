@@ -1,0 +1,19 @@
+extends layout
+
+block content
+  h1 Product List
+  if query && (query.name || query.inStock || query.all)
+    p.small Query: #{JSON.stringify(query)}
+
+  if products.length === 0
+    p No products found.
+  else
+    ul
+      each p in products
+        li
+          b #{p.name}
+          |  (ID: #{p.id}) — $#{p.price} — Stock: #{p.stock}
+          |  — 
+          a(href=`/products/${p.id}`) Detail
+          |  | 
+          a(href=`/products/${p.id}/reviews`) Reviews

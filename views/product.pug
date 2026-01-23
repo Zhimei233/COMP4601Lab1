@@ -1,33 +1,28 @@
-doctype html
-html
-  head
-    meta(charset="utf-8")
-    title Product #{product.id}
-  body
-    h1= product.name
-    p
-      b ID:
-      |  #{product.id}
-    p
-      b Price:
-      |  $#{product.price}
-    p
-      b Stock:
-      |  #{product.stock}
-    p
-      b Dimensions:
-      |  #{product.dimensions.x} x #{product.dimensions.y} x #{product.dimensions.z}
+extends layout
 
-    if avgRating !== null
-      p
-        b Average rating:
-        |  #{avgRating.toFixed(2)} / 10
-    else
-      p
-        b Average rating:
-        |  N/A (no reviews)
+block content
+  h1= product.name
+  p
+    b ID:
+    |  #{product.id}
+  p
+    b Price:
+    |  $#{product.price}
+  p
+    b Stock:
+    |  #{product.stock}
+  p
+    b Dimensions:
+    |  #{product.dimensions.x} x #{product.dimensions.y} x #{product.dimensions.z}
 
+  if avgRating !== null
     p
-      a(href=`/products/${product.id}/reviews`) View Reviews (HTML)
+      b Average rating:
+      |  #{avgRating.toFixed(2)} / 10
+  else
     p
-      a(href="/") Back
+      b Average rating:
+      |  N/A (no reviews)
+
+  p
+    a(href=`/products/${product.id}/reviews`) View Reviews

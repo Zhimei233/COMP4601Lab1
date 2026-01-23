@@ -1,24 +1,3 @@
-/*
-Product structure (from products.json):
-{
-  id: Number,
-  name: String,
-  price: Number,
-  dimensions: { x: Number, y: Number, z: Number },
-  stock: Number
-}
-
-Lab1 Required API:
-  1) GET  /products?name=...&all=true|inStock=true   (search, can combine params)
-  2) POST /products   (create; JSON body: name, price, x, y, z, stock)
-  3) GET  /products/:productID           (JSON or HTML)
-  4) POST /products/:productID/reviews   (add rating 1-10)
-  5) GET  /products/:productID/reviews   (JSON or HTML)
-
-No persistence required (reset on restart).
-Teacher style: app.param + verify/add middleware.
-*/
-
 const path = require("path");
 const express = require("express");
 const app = express();
@@ -26,16 +5,17 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// serve CSS
+app.use(express.static(path.join(__dirname, "public")));
+
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-// Store products as object keyed by ID
-let products = {};          // { "0": productObj, ... }
+// ------------------ In-memory store (teacher style) ------------------
+let products = {}; // { "0": productObj, ... }
 let nextProductID = 0;
 
-// Load products.json into memory, and add reviews=[]
 function initProducts() {
-  // Important: require caches; but lab is fine since no persistence + single run
   const list = require(path.join(__dirname, "products.json"));
 
   products = {};
@@ -55,7 +35,7 @@ function initProducts() {
         z: Number(p.dimensions?.z)
       },
       stock: Number(p.stock),
-      reviews: [] // reviews not in file; required by lab
+      reviews: [] // required, not in file
     };
 
     nextProductID = Math.max(nextProductID, id + 1);
@@ -63,7 +43,6 @@ function initProducts() {
 }
 initProducts();
 
-// ------------------ Helpers ------------------
 function searchProducts(query) {
   const name = (query.name || "").toString().trim().toLowerCase();
   const inStock = String(query.inStock || "").toLowerCase() === "true";
@@ -71,40 +50,37 @@ function searchProducts(query) {
 
   let arr = Object.values(products);
 
-  if (name) {
-    arr = arr.filter(p => (p.name || "").toLowerCase().includes(name));
-  }
-
-  // Can combine name + (inStock/all)
+  if (name) arr = arr.filter(p => (p.name || "").toLowerCase().includes(name));
   if (inStock) arr = arr.filter(p => Number(p.stock) > 0);
-  if (all) { /* include all, no filter */ }
+  if (all) { /* include all */ }
 
   return arr;
 }
 
-// ------------------ Routes ------------------
+// ------------------ Pages ------------------
+app.get("/", (req, res) => res.status(200).render("index"));
 
-// Basic web client
-app.get("/", (req, res) => {
-  res.status(200).render("index");
-});
+app.get("/about", (req, res) => res.status(200).render("about"));
 
-// 1) Search (JSON)
+// 1) SEARCH +  Products page
+// - JSON for API
+// - HTML for browser product list page
 app.get("/products", (req, res) => {
   const results = searchProducts(req.query);
-  // return list without reviews (optional)
   const stripped = results.map(({ reviews, ...rest }) => rest);
-  res.status(200).json(stripped);
+
+  res.format({
+    "application/json": () => res.status(200).json(stripped),
+    "text/html": () => res.status(200).render("products_list", { products: stripped, query: req.query }),
+    default: () => res.status(200).json(stripped)
+  });
 });
 
-// 2) Create product (teacher style: verify + add)
-// Accept JSON: name, price, x, y, z, stock  (x/y/z are TOP-LEVEL)
+// 2) CREATE product (accept JSON: name, price, x, y, z, stock)
 app.post("/products", [verifyProduct, addProduct]);
 
 function verifyProduct(req, res, next) {
-  if (!req.body) {
-    return res.status(400).send("JSON body required containing name, price, x, y, z, stock.");
-  }
+  if (!req.body) return res.status(400).send("JSON body required containing name, price, x, y, z, stock.");
 
   const required = ["name", "price", "x", "y", "z", "stock"];
   for (const k of required) {
@@ -116,17 +92,17 @@ function verifyProduct(req, res, next) {
   const name = String(req.body.name || "").trim();
   const price = Number(req.body.price);
   const stock = Number(req.body.stock);
-
   const x = Number(req.body.x);
   const y = Number(req.body.y);
   const z = Number(req.body.z);
 
   if (!name) return res.status(400).send("Invalid name.");
   if (!Number.isFinite(price) || price < 0) return res.status(400).send("Invalid price.");
-  if (!Number.isInteger(stock) || stock < 0) return res.status(400).send("Invalid stock (must be integer >= 0).");
-  if (![x, y, z].every(v => Number.isFinite(v) && v > 0)) return res.status(400).send("Invalid dimensions x/y/z (must be > 0).");
+  if (!Number.isInteger(stock) || stock < 0) return res.status(400).send("Invalid stock (integer >= 0).");
+  if (![x, y, z].every(v => Number.isFinite(v) && v > 0)) {
+    return res.status(400).send("Invalid x/y/z (must be > 0).");
+  }
 
-  // store cleaned values for addProduct
   req.cleanedProduct = { name, price, stock, x, y, z };
   next();
 }
@@ -146,11 +122,10 @@ function addProduct(req, res, next) {
   products[String(nextProductID)] = product;
   nextProductID++;
 
-  // teacher example uses 200
   res.status(200).json(product);
 }
 
-// Teacher style: app.param for any :productID usage
+// Teacher-style app.param
 app.param("productID", (req, res, next) => {
   const id = String(req.params.productID);
   if (Object.prototype.hasOwnProperty.call(products, id)) {
@@ -161,14 +136,11 @@ app.param("productID", (req, res, next) => {
   }
 });
 
-// 3) View product by ID (JSON or HTML)
+// 3) VIEW product (JSON or HTML)
 app.get("/products/:productID", (req, res) => {
   const p = req.product;
-
   const avg =
-    p.reviews.length === 0
-      ? null
-      : p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length;
+    p.reviews.length === 0 ? null : p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length;
 
   res.format({
     "application/json": () => res.status(200).json(p),
@@ -177,13 +149,11 @@ app.get("/products/:productID", (req, res) => {
   });
 });
 
-// 4) Add review (rating 1-10) (teacher style: verify + add)
+// 4) ADD review rating 1-10 (NO TIME FIELD)
 app.post("/products/:productID/reviews", verifyReview, addReview);
 
 function verifyReview(req, res, next) {
-  if (!req.body) {
-    return res.status(400).send("JSON body required containing rating (1-10).");
-  }
+  if (!req.body) return res.status(400).send("JSON body required containing rating (1-10).");
   if (!Object.prototype.hasOwnProperty.call(req.body, "rating")) {
     return res.status(400).send("JSON body required containing rating (1-10).");
   }
@@ -192,27 +162,20 @@ function verifyReview(req, res, next) {
   if (!Number.isInteger(rating) || rating < 1 || rating > 10) {
     return res.status(400).send("rating must be an integer from 1 to 10.");
   }
-
   next();
 }
 
 function addReview(req, res, next) {
-  const review = {
-    rating: Number(req.body.rating)
-  };
-
+  const review = { rating: Number(req.body.rating) };
   req.product.reviews.push(review);
   res.status(200).json(review);
 }
 
-// 5) View ONLY reviews (JSON or HTML)
+// 5) VIEW reviews only (JSON or HTML)
 app.get("/products/:productID/reviews", (req, res) => {
   const p = req.product;
-
   const avg =
-    p.reviews.length === 0
-      ? null
-      : p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length;
+    p.reviews.length === 0 ? null : p.reviews.reduce((s, r) => s + r.rating, 0) / p.reviews.length;
 
   res.format({
     "application/json": () => res.status(200).json(p.reviews),
