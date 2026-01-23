@@ -1,0 +1,28 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title Reviews #{productId}
+  body
+    h1 Reviews for #{productName} (ID: #{productId})
+
+    if avgRating !== null
+      p
+        b Average rating:
+        |  #{avgRating.toFixed(2)} / 10
+    else
+      p
+        b Average rating:
+        |  N/A (no reviews)
+
+    if reviews.length === 0
+      p No reviews yet.
+    else
+      ul
+        each r in reviews
+          li #{r.rating} / 10 — #{r.createdAt}
+
+    p
+      a(href=`/products/${productId}`) Back to Product
+    p
+      a(href="/") Back

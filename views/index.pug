@@ -1,0 +1,180 @@
+doctype html
+html
+  head
+    meta(charset="utf-8")
+    title Lab1 Client
+    style.
+      body{font-family:Arial;margin:20px}
+      h1{margin-bottom:14px}
+      h2{margin:0 0 10px 0}
+      .row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap}
+      .box{border:1px solid #ccc;padding:14px 16px;border-radius:10px;min-width:560px}
+      .hint{color:#666;font-size:12px;margin:6px 0 0 0}
+      .field{margin:8px 0}
+      .label{font-size:13px;color:#333;margin-bottom:6px}
+      input[type="text"], input[type="number"]{padding:8px;width:520px;border:1px solid #bbb;border-radius:8px}
+      button{padding:8px 12px;border:1px solid #999;border-radius:8px;background:#f7f7f7;cursor:pointer;width:520px}
+      button:hover{background:#efefef}
+      .option{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px}
+      .option input{width:auto;margin:0}
+      pre{background:#f3f3f3;padding:10px;border-radius:10px;width:980px;max-width:98vw;overflow:auto;margin-top:10px}
+      .btnRow{display:flex;gap:10px;flex-wrap:wrap}
+      .btnRow button{width:255px}
+      .split{height:10px}
+
+  body
+    h1 Lab1 Client (Single Page)
+
+    .row
+      .box
+        h2 Search products (JSON)
+
+        .field
+          .label Product name (optional)
+          input#name(type="text" placeholder="e.g., apple, headset, cable...")
+
+        label.option
+          input#inStock(type="checkbox")
+          | In stock only
+
+        label.option
+          input#all(type="checkbox")
+          | Include out-of-stock
+
+        button(onclick="search()") Search
+        p.hint Results (JSON) show below. Use an ID to open HTML pages on the right.
+        pre#out
+
+      .box
+        h2 Open HTML pages
+
+        .field
+          .label Product ID
+          input#pid(type="text" placeholder="e.g., 0")
+
+        .btnRow
+          button(onclick="openProduct()") Open Product (HTML)
+          button(onclick="openReviews()") Open Reviews (HTML)
+
+        .split
+
+        h2 Add review (JSON)
+
+        .field
+          .label Product ID
+          input#rid(type="text" placeholder="e.g., 0")
+
+        .field
+          .label Rating (1–10)
+          input#rating(type="number" min="1" max="10" placeholder="e.g., 8")
+
+        button(onclick="addReview()") Add Review
+
+    .row(style="margin-top:24px")
+      .box
+        h2 Create product (JSON)
+
+        p.hint Sends JSON: { name, price, x, y, z, stock }
+
+        .field
+          .label Name
+          input#c_name(type="text" placeholder="e.g., Wireless Mouse")
+
+        .field
+          .label Price
+          input#c_price(type="number" step="0.01" placeholder="e.g., 19.99")
+
+        .field
+          .label Dimensions (x, y, z)
+          input#c_x(type="number" step="0.01" placeholder="x (e.g., 10)")
+          input#c_y(type="number" step="0.01" placeholder="y (e.g., 6)")
+          input#c_z(type="number" step="0.01" placeholder="z (e.g., 3)")
+
+        .field
+          .label Initial Stock (integer)
+          input#c_stock(type="number" step="1" placeholder="e.g., 25")
+
+        button(onclick="createProduct()") Create Product
+        pre#createOut
+
+    script.
+      // Make search options mutually exclusive (cleaner)
+      const chkInStock = document.getElementById('inStock');
+      const chkAll = document.getElementById('all');
+      chkInStock.addEventListener('change', () => { if (chkInStock.checked) chkAll.checked = false; });
+      chkAll.addEventListener('change', () => { if (chkAll.checked) chkInStock.checked = false; });
+
+      async function search() {
+        const name = encodeURIComponent(document.getElementById('name').value.trim());
+        const inStock = chkInStock.checked ? 'true' : 'false';
+        const all = chkAll.checked ? 'true' : 'false';
+
+        const url = `/products?name=${name}&inStock=${inStock}&all=${all}`;
+        const res = await fetch(url, { headers: { "Accept": "application/json" } });
+        const data = await res.json();
+        document.getElementById('out').textContent = JSON.stringify(data, null, 2);
+
+        if (Array.isArray(data) && data.length > 0) {
+          document.getElementById('pid').value = data[0].id;
+          document.getElementById('rid').value = data[0].id;
+        }
+      }
+
+      function openProduct() {
+        const id = document.getElementById('pid').value.trim();
+        window.open(`/products/${id}`, '_blank');
+      }
+
+      function openReviews() {
+        const id = document.getElementById('pid').value.trim();
+        window.open(`/products/${id}/reviews`, '_blank');
+      }
+
+      async function addReview() {
+        const id = document.getElementById('rid').value.trim();
+        const rating = Number(document.getElementById('rating').value.trim());
+
+        const res = await fetch(`/products/${id}/reviews`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', "Accept": "application/json" },
+          body: JSON.stringify({ rating })
+        });
+
+        const text = await res.text();
+        alert(text);
+      }
+
+      async function createProduct() {
+        const out = document.getElementById('createOut');
+        out.textContent = "";
+
+        const body = {
+          name: document.getElementById('c_name').value.trim(),
+          price: Number(document.getElementById('c_price').value),
+          x: Number(document.getElementById('c_x').value),
+          y: Number(document.getElementById('c_y').value),
+          z: Number(document.getElementById('c_z').value),
+          stock: Number(document.getElementById('c_stock').value)
+        };
+
+        const res = await fetch(`/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', "Accept": "application/json" },
+          body: JSON.stringify(body)
+        });
+
+        let text;
+        try {
+          const data = await res.json();
+          text = JSON.stringify(data, null, 2);
+
+          if (data && data.id !== undefined) {
+            document.getElementById('pid').value = data.id;
+            document.getElementById('rid').value = data.id;
+          }
+        } catch {
+          text = await res.text();
+        }
+
+        out.textContent = `Status: ${res.status}\n` + text;
+      }
