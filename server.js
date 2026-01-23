@@ -11,10 +11,11 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-// ------------------ In-memory store (teacher style) ------------------
-let products = {}; // { "0": productObj, ... }
+// Data store
+let products = {};
 let nextProductID = 0;
 
+// Initialize products from JSON file
 function initProducts() {
   const list = require(path.join(__dirname, "products.json"));
 
@@ -43,6 +44,7 @@ function initProducts() {
 }
 initProducts();
 
+// searchProducts helper
 function searchProducts(query) {
   const name = (query.name || "").toString().trim().toLowerCase();
   const inStock = String(query.inStock || "").toLowerCase() === "true";
@@ -57,14 +59,12 @@ function searchProducts(query) {
   return arr;
 }
 
-// ------------------ Pages ------------------
+// Routes
 app.get("/", (req, res) => res.status(200).render("index"));
 
 app.get("/about", (req, res) => res.status(200).render("about"));
 
-// 1) SEARCH +  Products page
-// - JSON for API
-// - HTML for browser product list page
+// List of products
 app.get("/products", (req, res) => {
   const results = searchProducts(req.query);
   const stripped = results.map(({ reviews, ...rest }) => rest);
@@ -76,7 +76,7 @@ app.get("/products", (req, res) => {
   });
 });
 
-// 2) CREATE product (accept JSON: name, price, x, y, z, stock)
+// Create product (JSON body)
 app.post("/products", [verifyProduct, addProduct]);
 
 function verifyProduct(req, res, next) {
@@ -107,6 +107,7 @@ function verifyProduct(req, res, next) {
   next();
 }
 
+// Add product to data store
 function addProduct(req, res, next) {
   const c = req.cleanedProduct;
 
@@ -125,7 +126,7 @@ function addProduct(req, res, next) {
   res.status(200).json(product);
 }
 
-// Teacher-style app.param
+// param middleware to load product by ID
 app.param("productID", (req, res, next) => {
   const id = String(req.params.productID);
   if (Object.prototype.hasOwnProperty.call(products, id)) {
@@ -136,7 +137,7 @@ app.param("productID", (req, res, next) => {
   }
 });
 
-// 3) VIEW product (JSON or HTML)
+// View product details
 app.get("/products/:productID", (req, res) => {
   const p = req.product;
   const avg =
@@ -149,9 +150,9 @@ app.get("/products/:productID", (req, res) => {
   });
 });
 
-// 4) ADD review rating 1-10 (NO TIME FIELD)
 app.post("/products/:productID/reviews", verifyReview, addReview);
 
+// Middleware to verify review
 function verifyReview(req, res, next) {
   if (!req.body) return res.status(400).send("JSON body required containing rating (1-10).");
   if (!Object.prototype.hasOwnProperty.call(req.body, "rating")) {
@@ -165,13 +166,14 @@ function verifyReview(req, res, next) {
   next();
 }
 
+// Middleware to add review
 function addReview(req, res, next) {
   const review = { rating: Number(req.body.rating) };
   req.product.reviews.push(review);
   res.status(200).json(review);
 }
 
-// 5) VIEW reviews only (JSON or HTML)
+// List of reviews for a product
 app.get("/products/:productID/reviews", (req, res) => {
   const p = req.product;
   const avg =

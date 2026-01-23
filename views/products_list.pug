@@ -12,7 +12,7 @@ block content
       each p in products
         li
           b #{p.name}
-          |  (ID: #{p.id}) — $#{p.price} — Stock: #{p.stock}
+          |  (ID: #{p.id})
           |  — 
           a(href=`/products/${p.id}`) Detail
           |  | 
