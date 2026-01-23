@@ -29,7 +29,6 @@ app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-// ------------------ In-memory store (teacher style) ------------------
 // Store products as object keyed by ID
 let products = {};          // { "0": productObj, ... }
 let nextProductID = 0;
