@@ -5,7 +5,7 @@ block content
 
   .panel
     .section-title Search products (JSON)
-    label(for="s_name") Name contains (optional)
+    label(for="s_name") Name
     input#s_name(type="text" placeholder="e.g., bike")
 
     label
@@ -26,19 +26,18 @@ block content
     input#c_name(type="text" placeholder="e.g., Wireless Mouse")
     label Price
     input#c_price(type="number" step="0.01" placeholder="19.99")
-    label x
-    input#c_x(type="number" step="0.01" placeholder="10")
-    label y
-    input#c_y(type="number" step="0.01" placeholder="6")
-    label z
-    input#c_z(type="number" step="0.01" placeholder="3")
-    label Stock (integer)
+    label Dimensions (x, y, z)
+    div.dimRow
+    input#c_x(type="text" placeholder="x")
+    input#c_y(type="text" placeholder="y")
+    input#c_z(type="text" placeholder="z")
+    label Stock
     input#c_stock(type="number" step="1" placeholder="25")
     button(type="button" onclick="createProduct()") Create
     pre#createOut
 
   .panel
-    .section-title Jump to product pages (same tab)
+    .section-title Jump to product pages
     label Product ID
     input#pid(type="text" placeholder="e.g., 0")
     button(type="button" onclick="goDetail()") Go to Detail (HTML)
