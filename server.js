@@ -36,7 +36,7 @@ function initProducts() {
         z: Number(p.dimensions?.z)
       },
       stock: Number(p.stock),
-      reviews: [] // required, not in file
+      reviews: []
     };
 
     nextProductID = Math.max(nextProductID, id + 1);
