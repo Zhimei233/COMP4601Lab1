@@ -1,7 +1,7 @@
 COMP 4601 – Lab 1
 
 Link to the demonstration video:
-https://drive.google.com/file/d/155UeRVCU07dsA1vaJQSD8RGIFY6fFCEc/view?usp=sharing
+https://drive.google.com/file/d/1Cm74GeZpryNrVuhTdDg2_rGhq6t7PbwS/view?usp=sharing
 
 Group members:
 Ziyi Jiang 101266200
