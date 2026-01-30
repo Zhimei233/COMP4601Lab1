@@ -1,0 +1,182 @@
+extends layout
+
+block content
+  h1 Place an Order
+
+  .panel
+    .section-title Available Products (ID / Name / Price / Stock)
+    if products.length === 0
+      p No products in database.
+    else
+      table(style="border-collapse:collapse;width:100%;max-width:920px;font-family:Arial")
+        thead
+          tr
+            th(style="text-align:left;border-bottom:1px solid #ccc;padding:6px") ID
+            th(style="text-align:left;border-bottom:1px solid #ccc;padding:6px") Name
+            th(style="text-align:left;border-bottom:1px solid #ccc;padding:6px") Price
+            th(style="text-align:left;border-bottom:1px solid #ccc;padding:6px") Stock
+        tbody
+          each p in products
+            tr
+              td(style="border-bottom:1px solid #eee;padding:6px") #{p.id}
+              td(style="border-bottom:1px solid #eee;padding:6px")
+                a(href=`/products/${p.id}`) #{p.name}
+              td(style="border-bottom:1px solid #eee;padding:6px") $#{p.price}
+              td(style="border-bottom:1px solid #eee;padding:6px") #{p.stock}
+
+  .panel
+    .section-title Create Order
+    p.small Enter purchaser name, then items (one per line): productId,quantity
+
+    label Purchaser Name
+    input#buyer(type="text" placeholder="e.g., Ava" style="width:100%;max-width:420px;padding:6px;margin:6px 0 10px")
+
+    label Items
+    textarea#items(rows="6" style="width:100%;max-width:920px;font-family:Consolas,monospace;padding:8px" )
+
+    div(style="margin-top:10px")
+      button(type="button" onclick="submitOrder()") Submit Order
+
+    pre#out(style="margin-top:12px;white-space:pre-wrap")
+
+  .panel
+    .section-title Orders (click to view detail)
+    button(type="button" onclick="loadOrdersPretty()") Refresh Orders
+    div#ordersBox(style="margin-top:10px")
+      p.small No orders loaded yet.
+
+    .section-title Order Detail
+    div#orderDetail(style="margin-top:10px")
+      p.small Click an order above to view detail.
+
+  script.
+    function parseItems(text){
+      const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const items = [];
+      for(const line of lines){
+        const parts = line.split(",").map(s => s.trim());
+        if(parts.length < 2) continue;
+        const productId = Number(parts[0]);
+        const quantity = Number(parts[1]);
+        items.push({ productId, quantity });
+      }
+      return items;
+    }
+
+    async function submitOrder(){
+      const purchaserName = document.getElementById('buyer').value.trim();
+      const itemsText = document.getElementById('items').value;
+      const items = parseItems(itemsText);
+
+      const out = document.getElementById('out');
+      out.textContent = '';
+
+      const res = await fetch('/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ purchaserName, items })
+      });
+
+      let data;
+      try { data = await res.json(); } catch { data = await res.text(); }
+
+      out.textContent =
+        `Status: ${res.status}\n` +
+        (typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+
+      // success: refresh stock + orders list
+      if(res.status === 201){
+        setTimeout(() => window.location.reload(), 600);
+      }
+    }
+
+    async function loadOrdersPretty(){
+      const box = document.getElementById('ordersBox');
+      const detail = document.getElementById('orderDetail');
+      box.innerHTML = '<p class="small">Loading...</p>';
+      detail.innerHTML = '<p class="small">Click an order above to view detail.</p>';
+
+      const res = await fetch('/orders', { headers: { 'Accept': 'application/json' } });
+      const orders = await res.json();
+
+      if(!Array.isArray(orders) || orders.length === 0){
+        box.innerHTML = '<p class="small">No orders yet.</p>';
+        return;
+      }
+
+      const ul = document.createElement('ul');
+      for(const o of orders){
+        const li = document.createElement('li');
+
+        const label = (o.orderNumber !== undefined) ? `Order #${o.orderNumber}` : 'Order';
+
+        const a = document.createElement('a');
+        a.href = '#';
+        a.textContent = `${label} — ${o.purchaserName}`;
+        a.onclick = async (e) => {
+          e.preventDefault();
+          await loadOrderDetail(o.link);
+        };
+
+        li.appendChild(a);
+        ul.appendChild(li);
+      }
+      box.innerHTML = '';
+      box.appendChild(ul);
+    }
+
+    async function loadOrderDetail(link){
+      const box = document.getElementById('orderDetail');
+      box.innerHTML = '<p class="small">Loading order detail...</p>';
+
+      const res = await fetch(link, { headers: { 'Accept': 'application/json' } });
+      const o = await res.json();
+
+      const title = (o.orderNumber !== undefined) ? `Order #${o.orderNumber}` : 'Order';
+      const created = o.createdAt ? new Date(o.createdAt).toLocaleString() : '';
+
+      let html = `
+        <div style="border:1px solid #ddd;padding:10px;max-width:920px">
+          <div style="font-weight:bold;font-size:18px;margin-bottom:6px">${title}</div>
+          <div style="margin-bottom:10px">
+            <span><b>Purchaser:</b> ${o.purchaserName || ''}</span>
+            ${created ? ` &nbsp; | &nbsp; <span><b>Created:</b> ${created}</span>` : ''}
+          </div>
+          <table style="border-collapse:collapse;width:100%">
+            <thead>
+              <tr>
+                <th style="text-align:left;border-bottom:1px solid #ccc;padding:6px">Product</th>
+                <th style="text-align:left;border-bottom:1px solid #ccc;padding:6px">Price</th>
+                <th style="text-align:left;border-bottom:1px solid #ccc;padding:6px">Qty</th>
+                <th style="text-align:left;border-bottom:1px solid #ccc;padding:6px">Line Total</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      for(const it of (o.items || [])){
+        const pLink = it.productLink || `/products/${it.productId}`;
+        html += `
+          <tr>
+            <td style="border-bottom:1px solid #eee;padding:6px">
+              <a href="${pLink}">${it.name}</a> (ID: ${it.productId})
+            </td>
+            <td style="border-bottom:1px solid #eee;padding:6px">$${it.price}</td>
+            <td style="border-bottom:1px solid #eee;padding:6px">${it.quantity}</td>
+            <td style="border-bottom:1px solid #eee;padding:6px">$${it.lineTotal}</td>
+          </tr>
+        `;
+      }
+
+      html += `
+            </tbody>
+          </table>
+          <div style="margin-top:10px;font-weight:bold">Total: $${o.total}</div>
+        </div>
+      `;
+
+      box.innerHTML = html;
+    }
+
+    // auto-load orders list on page load
+    loadOrdersPretty();

@@ -50,8 +50,12 @@ Data is stored in memory.
     cd COMP4601LAB1
 2. Install dependencies:
     npm install
+    //make sure you have mongoDB installed: Get-Service *mongo*
+    npm i mongoose
 3. Start the server:
     node server.js
+    or
+    npm run dev
 4. Open a browser and visit:
     http://localhost:3000
 
