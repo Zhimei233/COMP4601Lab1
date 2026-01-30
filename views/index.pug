@@ -40,7 +40,6 @@ block content
     button(type="button" onclick="goReviews()") Go to Reviews (HTML)
 
   script.
-    // Make search options mutually exclusive
     const chkIn = document.getElementById('s_inStock');
     const chkAll = document.getElementById('s_all');
     chkIn.addEventListener('change', () => { if (chkIn.checked) chkAll.checked = false; });
@@ -70,20 +69,30 @@ block content
     }
     loadFeatured();
 
+    // Product search
     async function search(){
       const name = encodeURIComponent(document.getElementById('s_name').value.trim());
-      const inStock = chkIn.checked ? 'true' : 'false';
-      // default = all product
-      const url = inStock
-        ? `/products?name=${name}&inStock=true`
-        : `/products?name=${name}&all=true`;
 
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
+      let url = `/products?name=${name}`;
+
+      if (chkIn.checked) {
+        url += `&inStock=true`;
+      }
+
+      const res = await fetch(url, {
+        headers: { "Accept": "application/json" }
+      });
+
       const data = await res.json();
-      document.getElementById('out').textContent = JSON.stringify(data, null, 2);
-      if (Array.isArray(data) && data.length>0) setPid(data[0].id);
+      document.getElementById('out').textContent =
+        JSON.stringify(data, null, 2);
+
+      if (Array.isArray(data) && data.length > 0) {
+        setPid(data[0].id);
+      }
     }
 
+    // Create product
     async function createProduct(){
       const out = document.getElementById('createOut');
       out.textContent = '';

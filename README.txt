@@ -1,7 +1,7 @@
 COMP 4601 – Lab 1
 
 Link to the demonstration video:
-
+https://drive.google.com/file/d/17B1mVuCJi3b2ZFLCOb8z4P4JXhNqBLPn/view?usp=sharing
 
 Group members:
 Ziyi Jiang 101266200
@@ -28,13 +28,15 @@ Data is stored in memory.
 - products.json 
   Initial product data loaded into memory when the server starts.  
   Each product contains an id, name, price, dimensions, stock, and reviews.
+- public/
+  styles.css: The styles for the webside.
 - views/
   Contains Pug templates used to render HTML pages.
-  - layout.pug – Base layout shared by all pages  
-  - index.pug – Home page  
-  - products_list.pug – Displays a list of products  
-  - product.pug – Displays a single product and its details  
-  - reviews.pug – Displays reviews for a specific product  
+  - layout.pug: Base layout shared by all pages  
+  - index.pug: Home page  
+  - products_list.pug: Displays a list of products  
+  - product.pug: Displays a single product and its details  
+  - reviews.pug: Displays reviews for a specific product  
 - package.json / package-lock.json  
   Project configuration and dependency definitions.
 
