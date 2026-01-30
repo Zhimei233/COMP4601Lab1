@@ -1,16 +1,17 @@
-COMP 4601 – Lab 1
+COMP 4601 – Lab 2
 
 Link to the demonstration video:
-https://drive.google.com/file/d/17B1mVuCJi3b2ZFLCOb8z4P4JXhNqBLPn/view?usp=sharing
+Lab1：https://drive.google.com/file/d/17B1mVuCJi3b2ZFLCOb8z4P4JXhNqBLPn/view?usp=sharing
+Lab2:
 
 Group members:
 Ziyi Jiang 101266200
 Zhimei Li 101258414
 
 # Overview
-This project demonstrates the use of Node.js, RESTful API design, and server-side HTML rendering to manage and view products in an e-commerce–style system.
+This project demonstrates the use of Node.js, RESTful API design, and server-side HTML/PUG rendering to manage and view products in an e-commerce–style system.
 The application supports searching, viewing, and manipulating products, as well as adding and viewing product reviews.  
-Data is stored in memory.
+Data is stored in mongoDB.
 
 # Features
 - Search products by name
