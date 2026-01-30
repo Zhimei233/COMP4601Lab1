@@ -14,9 +14,10 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
+// MongoDB connection URL
 const MONGO_URL = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/comp4601lab2";
 
-// ---------- seed products.json if DB empty ----------
+// seed products.json if DB empty
 async function seedIfEmpty() {
   const count = await Product.countDocuments();
   if (count > 0) return;
@@ -32,7 +33,7 @@ async function seedIfEmpty() {
       z: Number(p.dimensions?.z)
     },
     stock: Number(p.stock),
-    reviews: []
+    reviews: [] // ratings from 1 to 10
   }));
 
   await Product.insertMany(docs);
@@ -44,7 +45,7 @@ async function getNextProductId() {
   return last ? last.id + 1 : 0;
 }
 
-// ---------- Helpers ----------
+// Helpers to load product by :productID param
 async function loadProductOr404(req, res, next) {
   const id = Number(req.params.productID);
   if (!Number.isInteger(id)) return res.status(404).send("Unknown product ID");
@@ -56,11 +57,11 @@ async function loadProductOr404(req, res, next) {
   next();
 }
 
-// ---------- Pages ----------
+// page routes
 app.get("/", (req, res) => res.status(200).render("index"));
 app.get("/about", (req, res) => res.status(200).render("about"));
 
-// ---------- Products ----------
+// products routes
 // Search products (default all, inStock=true filters)
 app.get("/products", async (req, res) => {
   const name = (req.query.name || "").toString().trim();
@@ -108,7 +109,7 @@ app.get("/products/:productID", loadProductOr404, (req, res) => {
   });
 });
 
-// Add review (rating 1-10) -> DB push
+// Add review (rating 1-10) for product
 app.post("/products/:productID/reviews", loadProductOr404, verifyReview, async (req, res) => {
   const id = Number(req.params.productID);
   const rating = Number(req.body.rating);
@@ -135,12 +136,12 @@ app.get("/products/:productID/reviews", loadProductOr404, (req, res) => {
   });
 });
 
-// ---------- Orders ----------
-// POST /orders
-// body: { purchaserName: "Alice", items: [ { productId: 1, quantity: 2 }, ... ] }
+// Orders
+// create order
 app.post("/orders", async (req, res) => {
   const issues = [];
 
+  // order body validation
   const purchaserName = String(req.body?.purchaserName || "").trim();
   const items = req.body?.items;
 
@@ -149,11 +150,13 @@ app.post("/orders", async (req, res) => {
 
   if (issues.length > 0) return res.status(409).json({ error: "Order invalid", issues });
 
+  // items validation
   const normalized = items.map(it => ({
     productId: Number(it.productId),
     quantity: Number(it.quantity)
   }));
 
+  // check item fields
   for (const it of normalized) {
     if (!Number.isInteger(it.productId)) issues.push({ type: "BAD_PRODUCT_ID", productId: it.productId });
     if (!Number.isInteger(it.quantity) || it.quantity < 1)
@@ -165,11 +168,13 @@ app.post("/orders", async (req, res) => {
   const prodDocs = await Product.find({ id: { $in: ids } }).lean();
   const prodMap = new Map(prodDocs.map(p => [p.id, p]));
 
+   // check products exist
   for (const it of normalized) {
     if (!prodMap.has(it.productId)) issues.push({ type: "PRODUCT_NOT_FOUND", productId: it.productId });
   }
   if (issues.length > 0) return res.status(409).json({ error: "Order invalid", issues });
 
+  // check stock availability
   for (const it of normalized) {
     const p = prodMap.get(it.productId);
     if (p.stock < it.quantity) {
@@ -178,7 +183,7 @@ app.post("/orders", async (req, res) => {
   }
   if (issues.length > 0) return res.status(409).json({ error: "Order invalid", issues });
 
-  // Deduct stock safely (simple approach + rollback)
+  // Deduct stock safely
   const applied = [];
   try {
     for (const it of normalized) {
@@ -190,6 +195,7 @@ app.post("/orders", async (req, res) => {
       applied.push(it);
     }
 
+    // create order
     const orderItems = normalized.map(it => {
       const p = prodMap.get(it.productId);
       return { productId: p.id, name: p.name, price: p.price, quantity: it.quantity };
@@ -207,7 +213,8 @@ app.post("/orders", async (req, res) => {
     return res.status(409).json({ error: "Order invalid", issues: [{ type: "INSUFFICIENT_STOCK_OR_CONCURRENT_UPDATE" }] });
   }
 });
-// GET /orders list + links
+
+// List orders summary
 app.get("/orders", async (req, res) => {
   const orders = await Order.find(
     {},
@@ -221,12 +228,12 @@ app.get("/orders", async (req, res) => {
       orderNumber: o.orderNumber,
       purchaserName: o.purchaserName,
       createdAt: o.createdAt,
-      link: `/orders/${o._id}` // 资源链接仍然用 Mongo _id（符合要求）
+      link: `/orders/${o._id}`
     }))
   );
 });
 
-// GET /orders/:id detail  (by Mongo _id; link points here)
+// get order details
 app.get("/orders/:orderID", async (req, res) => {
   const id = req.params.orderID;
   if (!mongoose.isValidObjectId(id)) return res.status(404).send("Unknown order ID");
@@ -240,21 +247,20 @@ app.get("/orders/:orderID", async (req, res) => {
     price: it.price,
     quantity: it.quantity,
     lineTotal: it.price * it.quantity,
-    productLink: `/products/${it.productId}` // 可选：给前端点商品用
+    productLink: `/products/${it.productId}`
   }));
   const total = items.reduce((s, x) => s + x.lineTotal, 0);
 
   res.status(200).json({
-    orderNumber: order.orderNumber,      // ✅ 你要的 1/2/3
+    orderNumber: order.orderNumber,      
     purchaserName: order.purchaserName,
     createdAt: order.createdAt,
     items,
     total
-    // 不再返回 orderId: String(order._id)（避免“乱码”）
   });
 });
 
-// Orders demo page
+// Orders page (HTML)
 app.get("/orders-page", async (req, res) => {
   const products = await Product.find(
     {},
@@ -266,7 +272,7 @@ app.get("/orders-page", async (req, res) => {
   res.status(200).render("orders_page", { products });
 });
 
-// ---------- Validation middleware (same as your Lab1) ----------
+// Validation middleware
 function verifyProduct(req, res, next) {
   if (!req.body) return res.status(400).send("JSON body required containing name, price, x, y, z, stock.");
 
@@ -295,6 +301,7 @@ function verifyProduct(req, res, next) {
   next();
 }
 
+// rating 1-10 validation middleware
 function verifyReview(req, res, next) {
   if (!req.body) return res.status(400).send("JSON body required containing rating (1-10).");
   if (!Object.prototype.hasOwnProperty.call(req.body, "rating")) {
@@ -308,7 +315,7 @@ function verifyReview(req, res, next) {
   next();
 }
 
-// ---------- Start ----------
+// Start
 (async () => {
   await mongoose.connect(MONGO_URL);
   console.log("Mongo connected:", MONGO_URL);

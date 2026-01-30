@@ -8,7 +8,7 @@ const ReviewSchema = new mongoose.Schema(
 );
 
 const ProductSchema = new mongoose.Schema({
-  // 为了兼容你 Lab1 的 /products/:id（数字ID），保留 numeric id 字段
+  // Using productId as unique identifier
   id: { type: Number, required: true, unique: true, index: true },
   name: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },

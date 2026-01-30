@@ -2,16 +2,15 @@ COMP 4601 – Lab 2
 
 Link to the demonstration video:
 Lab1：https://drive.google.com/file/d/17B1mVuCJi3b2ZFLCOb8z4P4JXhNqBLPn/view?usp=sharing
-Lab2:
+Lab2: https://drive.google.com/file/d/1tNVJeaI6bq7pzCBZpIx_fkjBm6BvRlLI/view?usp=sharing
 
 Group members:
 Ziyi Jiang 101266200
 Zhimei Li 101258414
 
 # Overview
-This project demonstrates the use of Node.js, RESTful API design, and server-side HTML/PUG rendering to manage and view products in an e-commerce–style system.
-The application supports searching, viewing, and manipulating products, as well as adding and viewing product reviews.  
-Data is stored in mongoDB.
+This project demonstrates the use of Node.js, MongoDB, RESTful API design, 
+and server-side HTML rendering with Pug to build an e commerce style web application.
 
 # Features
 - Search products by name
@@ -20,15 +19,23 @@ Data is stored in mongoDB.
 - View a specific product by ID (JSON or HTML)
 - Add reviews (ratings from 1–10) to a product
 - View reviews for a specific product (JSON or HTML)
+- Create a new order using a JSON request
+- Validate product availability and stock levels
+- Automatically update product stock when an order is created
+- View a list of orders
+- View details for a specific order
 
 
 # File Descriptions
 - server.js  
   Main server file.  
-  Defines RESTful routes for products and reviews, handles request validation, and serves JSON or HTML responses.
-- products.json 
-  Initial product data loaded into memory when the server starts.  
-  Each product contains an id, name, price, dimensions, stock, and reviews.
+  Defines RESTful routes for products, reviews, and orders.
+  Connects to MongoDB, performs validation, and returns JSON or HTML responses.
+- models/
+  - Products.js: Defines the product schema and embedded reviews
+  - Order.js: Defines the order schema and ordered items
+- products.json
+  Initial product data used to seed the database when it is empty.
 - public/
   styles.css: The styles for the webside.
 - views/
@@ -37,7 +44,8 @@ Data is stored in mongoDB.
   - index.pug: Home page  
   - products_list.pug: Displays a list of products  
   - product.pug: Displays a single product and its details  
-  - reviews.pug: Displays reviews for a specific product  
+  - reviews.pug: Displays reviews for a specific product 
+  - orders_page.pug: Page used to create and view orders
 - package.json / package-lock.json  
   Project configuration and dependency definitions.
 
@@ -46,10 +54,10 @@ Data is stored in mongoDB.
 
 # Prerequisites
 - Node.js (v18 or later recommended)
+- MongoDB installed and running locally
 
 # Steps
 1. Navigate to the project directory:
-    ```bash
     cd COMP4601LAB1
 2. Install dependencies:
     npm install
